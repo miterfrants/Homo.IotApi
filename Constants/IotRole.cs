@@ -8,7 +8,5 @@ namespace Homo.IotApi
         NO = ROLE.NO,
         ADMIN = ROLE.ADMIN,
 
-
-
     }
 }

@@ -12,6 +12,10 @@ namespace Homo.IotApi
         public IotDbContext() { }
 
         public IotDbContext(DbContextOptions<IotDbContext> options) : base(options) { }
+        
+        public virtual DbSet<Device> Device { get; set; }
+        
+        public virtual DbSet<Zone> Zone { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
