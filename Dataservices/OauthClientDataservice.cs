@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Homo.IotApi
 {
-    public class DeviceDataservice
+    public class OauthClientDataservice
     {
-        public static List<Device> GetList(IotDbContext dbContext, long ownerId, int page, int limit)
+        public static List<OauthClient> GetList(IotDbContext dbContext, long ownerId, int page, int limit)
         {
-            return dbContext.Device
+            return dbContext.OauthClient
                 .Where(x =>
                     x.DeletedAt == null
                     && x.OwnerId == ownerId
@@ -20,9 +20,9 @@ namespace Homo.IotApi
                 .ToList();
         }
 
-        public static List<Device> GetAll(IotDbContext dbContext, long ownerId)
+        public static List<OauthClient> GetAll(IotDbContext dbContext, long ownerId)
         {
-            return dbContext.Device
+            return dbContext.OauthClient
                 .Where(x =>
                     x.DeletedAt == null
                     && x.OwnerId == ownerId
@@ -32,7 +32,7 @@ namespace Homo.IotApi
         }
         public static int GetRowNum(IotDbContext dbContext, long ownerId)
         {
-            return dbContext.Device
+            return dbContext.OauthClient
                 .Where(x =>
                     x.DeletedAt == null
                     && x.OwnerId == ownerId
@@ -40,27 +40,34 @@ namespace Homo.IotApi
                 .Count();
         }
 
-        public static Device GetOne(IotDbContext dbContext, long ownerId, long id)
+        public static OauthClient GetOne(IotDbContext dbContext, long ownerId, long id)
         {
-            return dbContext.Device.FirstOrDefault(x =>
-                x.DeletedAt == null
-                && x.Id == id
-                && x.OwnerId == ownerId
+            return dbContext.OauthClient.FirstOrDefault(x => x.DeletedAt == null
+            && x.OwnerId == ownerId
+            && x.Id == id);
+        }
+
+        public static OauthClient GetOneByClientId(IotDbContext dbContext, string clientId)
+        {
+            return dbContext.OauthClient.FirstOrDefault(x => x.DeletedAt == null
+            && x.ClientId == clientId
             );
         }
 
-        public static Device Create(IotDbContext dbContext, long ownerId, DTOs.Device dto)
+        public static OauthClient Create(IotDbContext dbContext, long ownerId, DTOs.OauthClient dto, string hashClientSecrets, string salt)
         {
-            Device record = new Device();
+            OauthClient record = new OauthClient();
             foreach (var propOfDTO in dto.GetType().GetProperties())
             {
                 var value = propOfDTO.GetValue(dto);
                 var prop = record.GetType().GetProperty(propOfDTO.Name);
                 prop.SetValue(record, value);
             }
-            record.CreatedAt = DateTime.Now;
+            record.HashClientSecrets = hashClientSecrets;
             record.OwnerId = ownerId;
-            dbContext.Device.Add(record);
+            record.Salt = salt;
+            record.CreatedAt = DateTime.Now;
+            dbContext.OauthClient.Add(record);
             dbContext.SaveChanges();
             return record;
         }
@@ -69,29 +76,28 @@ namespace Homo.IotApi
         {
             foreach (long id in ids)
             {
-                Device record = new Device { Id = id, OwnerId = ownerId };
-                dbContext.Attach<Device>(record);
+                OauthClient record = new OauthClient { Id = id, OwnerId = ownerId };
+                dbContext.Attach<OauthClient>(record);
                 record.DeletedAt = DateTime.Now;
             }
             dbContext.SaveChanges();
         }
 
-        public static void Update(IotDbContext dbContext, long ownerId, long id, DTOs.Device dto)
+        public static void Update(IotDbContext dbContext, long id, long ownerId, DTOs.OauthClient dto)
         {
-            Device record = dbContext.Device.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
+            OauthClient record = dbContext.OauthClient.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
             foreach (var propOfDTO in dto.GetType().GetProperties())
             {
                 var value = propOfDTO.GetValue(dto);
                 var prop = record.GetType().GetProperty(propOfDTO.Name);
                 prop.SetValue(record, value);
             }
-            record.EditedAt = DateTime.Now;
             dbContext.SaveChanges();
         }
 
         public static void Delete(IotDbContext dbContext, long ownerId, long id)
         {
-            Device record = dbContext.Device.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
+            OauthClient record = dbContext.OauthClient.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
             record.DeletedAt = DateTime.Now;
             dbContext.SaveChanges();
         }

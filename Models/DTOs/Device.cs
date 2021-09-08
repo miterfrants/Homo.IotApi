@@ -1,4 +1,5 @@
 using System;
+using Homo.Api;
 
 namespace Homo.IotApi
 {
@@ -6,6 +7,10 @@ namespace Homo.IotApi
     {
         public partial class Device : DTOs
         {
+            [Required]
+            [MaxLength(64)]
+            public string Name { get; set; }
+            public long ZoneId { get; set; }
         }
     }
 }

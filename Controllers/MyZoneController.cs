@@ -7,11 +7,11 @@ using Homo.Core.Constants;
 namespace Homo.IotApi
 {
     [IotAuthorizeFactory]
-    [Route("v1/devices")]
-    public class DeviceController : ControllerBase
+    [Route("v1/me/zones")]
+    public class MyZoneController : ControllerBase
     {
         private readonly IotDbContext _dbContext;
-        public DeviceController(IotDbContext dbContext)
+        public MyZoneController(IotDbContext dbContext)
         {
             _dbContext = dbContext;
         }
@@ -19,11 +19,11 @@ namespace Homo.IotApi
         [HttpGet]
         public ActionResult<dynamic> getList([FromQuery] int limit, [FromQuery] int page)
         {
-            List<Device> records = DeviceDataservice.GetList(_dbContext, page, limit);
+            List<Zone> records = ZoneDataservice.GetList(_dbContext, page, limit);
             return new
             {
-                devices = records,
-                rowNums = DeviceDataservice.GetRowNum(_dbContext)
+                zones = records,
+                rowNums = ZoneDataservice.GetRowNum(_dbContext)
             };
         }
 
@@ -31,14 +31,14 @@ namespace Homo.IotApi
         [Route("all")]
         public ActionResult<dynamic> getAll()
         {
-            return DeviceDataservice.GetAll(_dbContext);
+            return ZoneDataservice.GetAll(_dbContext);
         }
 
         [HttpPost]
-        public ActionResult<dynamic> create([FromBody] DTOs.Device dto, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
+        public ActionResult<dynamic> create([FromBody] DTOs.Zone dto, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
         {
             long createdBy = extraPayload.Id;
-            Device rewRecord = DeviceDataservice.Create(_dbContext, createdBy, dto);
+            Zone rewRecord = ZoneDataservice.Create(_dbContext, createdBy, dto);
             return rewRecord;
         }
 
@@ -46,7 +46,7 @@ namespace Homo.IotApi
         public ActionResult<dynamic> batchDelete([FromBody] List<long> ids, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
         {
             long editedBy = extraPayload.Id;
-            DeviceDataservice.BatchDelete(_dbContext, editedBy, ids);
+            ZoneDataservice.BatchDelete(_dbContext, editedBy, ids);
             return new { status = CUSTOM_RESPONSE.OK };
         }
 
@@ -54,7 +54,7 @@ namespace Homo.IotApi
         [Route("{id}")]
         public ActionResult<dynamic> get([FromRoute] int id, dynamic extraPayload)
         {
-            Device record = DeviceDataservice.GetOne(_dbContext, id); 
+            Zone record = ZoneDataservice.GetOne(_dbContext, id);
             if (record == null)
             {
                 throw new CustomException(ERROR_CODE.DATA_NOT_FOUND, System.Net.HttpStatusCode.NotFound);
@@ -64,10 +64,10 @@ namespace Homo.IotApi
 
         [HttpPatch]
         [Route("{id}")]
-        public ActionResult<dynamic> update([FromRoute] int id, [FromBody] DTOs.Device dto, dynamic extraPayload)
+        public ActionResult<dynamic> update([FromRoute] int id, [FromBody] DTOs.Zone dto, dynamic extraPayload)
         {
             long editedBy = extraPayload.Id;
-            DeviceDataservice.Update(_dbContext, id, editedBy, dto);
+            ZoneDataservice.Update(_dbContext, id, editedBy, dto);
             return new { status = CUSTOM_RESPONSE.OK };
         }
 
@@ -76,7 +76,7 @@ namespace Homo.IotApi
         public ActionResult<dynamic> delete([FromRoute] long id, dynamic extraPayload)
         {
             long editedBy = extraPayload.Id;
-            DeviceDataservice.Delete(_dbContext, id, editedBy);
+            ZoneDataservice.Delete(_dbContext, id, editedBy);
             return new { status = CUSTOM_RESPONSE.OK };
         }
 

@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using Homo.AuthApi;
 using Homo.Api;
 
@@ -33,8 +34,9 @@ namespace Homo.IotApi
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            Homo.AuthApi.AppSettings appSettings = new Homo.AuthApi.AppSettings();
+            AppSettings appSettings = new AppSettings();
             Configuration.GetSection("Config").Bind(appSettings);
+            services.Configure<AppSettings>(Configuration.GetSection("Config"));
             services.Configure<Homo.AuthApi.AppSettings>(Configuration.GetSection("Config"));
 
             // setup CROS if config file includ CROS section
@@ -64,13 +66,33 @@ namespace Homo.IotApi
             services.AddSingleton<CommonLocalizer>(new CommonLocalizer(appSettings.Common.LocalizationResourcesPath));
             services.AddSingleton<ValidationLocalizer>(new ValidationLocalizer(appSettings.Common.LocalizationResourcesPath));
             var serverVersion = new MySqlServerVersion(new Version(8, 0, 25));
-            var secrets = (Homo.AuthApi.Secrets)appSettings.Secrets;
+            var secrets = (Homo.IotApi.Secrets)appSettings.Secrets;
             services.AddDbContext<IotDbContext>(options => options.UseMySql(secrets.DBConnectionString, serverVersion));
             services.AddDbContext<Homo.AuthApi.DBContext>(options => options.UseMySql(secrets.DBConnectionString, serverVersion));
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo() { Title = "Api Doc", Version = "v1" });
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Description = "Please insert JWT with Bearer into field",
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey
+                });
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                        },
+                        new string[] { }
+                        }
+                    });
             });
         }
 
@@ -106,7 +128,7 @@ namespace Homo.IotApi
             app.UseHttpsRedirection();
             app.UsePathBase(new PathString($"/{apiPrefix}"));
             app.UseRouting();
-            app.UseMiddleware(typeof(AuthApiErrorHandlingMiddleware));
+            app.UseMiddleware(typeof(IotApiErrorHandlingMiddleware));
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>

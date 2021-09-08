@@ -20,7 +20,7 @@ namespace Homo.IotApi
 
         public IFilterMetadata CreateInstance(IServiceProvider serviceProvider)
         {
-            IOptions<AppSettings> config = serviceProvider.GetService<IOptions<AppSettings>>();
+            IOptions<Homo.IotApi.AppSettings> config = serviceProvider.GetService<IOptions<Homo.IotApi.AppSettings>>();
             var secrets = (Secrets)config.Value.Secrets;
             return AuthorizeFactory.BuildAuthorizeAttribute(
                 _iotRoles.Select(x => x.ToString()).ToArray()

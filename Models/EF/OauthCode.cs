@@ -3,17 +3,16 @@ using Homo.Api;
 
 namespace Homo.IotApi
 {
-    public partial class Device
+    public partial class OauthCode
     {
         public long Id { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? EditedAt { get; set; }
-        public long OwnerId { get; set; }
         public DateTime? DeletedAt { get; set; }
         [Required]
-        [MaxLength(64)]
-        public string Name { get; set; }
-        public long ZoneId { get; set; }
-        public Zone Zone { get; set; }
+        [MaxLength(20)]
+        public string Code { get; set; }
+        [Required]
+        public DateTime ExpiredAt { get; set; }
     }
 }
