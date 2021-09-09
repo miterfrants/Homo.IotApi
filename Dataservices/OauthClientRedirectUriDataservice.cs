@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Homo.IotApi
 {
-    public class OauthClientDataservice
+    public class OauthClientRedirectUriDataservice
     {
-        public static List<OauthClient> GetList(IotDbContext dbContext, long ownerId, int page, int limit)
+        public static List<OauthClientRedirectUri> GetList(IotDbContext dbContext, long ownerId, int page, int limit)
         {
-            return dbContext.OauthClient
+            return dbContext.OauthClientRedirectUri
                 .Where(x =>
                     x.DeletedAt == null
                     && x.OwnerId == ownerId
@@ -20,9 +20,9 @@ namespace Homo.IotApi
                 .ToList();
         }
 
-        public static List<OauthClient> GetAll(IotDbContext dbContext, long ownerId)
+        public static List<OauthClientRedirectUri> GetAll(IotDbContext dbContext, long ownerId)
         {
-            return dbContext.OauthClient
+            return dbContext.OauthClientRedirectUri
                 .Where(x =>
                     x.DeletedAt == null
                     && x.OwnerId == ownerId
@@ -32,7 +32,7 @@ namespace Homo.IotApi
         }
         public static int GetRowNum(IotDbContext dbContext, long ownerId)
         {
-            return dbContext.OauthClient
+            return dbContext.OauthClientRedirectUri
                 .Where(x =>
                     x.DeletedAt == null
                     && x.OwnerId == ownerId
@@ -40,34 +40,28 @@ namespace Homo.IotApi
                 .Count();
         }
 
-        public static OauthClient GetOne(IotDbContext dbContext, long ownerId, long id)
+        public static OauthClientRedirectUri GetOne(IotDbContext dbContext, long ownerId, long id)
         {
-            return dbContext.OauthClient.FirstOrDefault(x => x.DeletedAt == null
-            && x.OwnerId == ownerId
-            && x.Id == id);
+            return dbContext.OauthClientRedirectUri.FirstOrDefault(x => x.DeletedAt == null && x.Id == id && x.OwnerId == ownerId);
         }
 
-        public static OauthClient GetOneByClientId(IotDbContext dbContext, string clientId)
+        public static OauthClientRedirectUri GetOneByRedirectUri(IotDbContext dbContext, long ownerId, string redirectUri)
         {
-            return dbContext.OauthClient.FirstOrDefault(x => x.DeletedAt == null
-            && x.ClientId == clientId
-            );
+            return dbContext.OauthClientRedirectUri.FirstOrDefault(x => x.DeletedAt == null && x.Uri == redirectUri && x.OwnerId == ownerId);
         }
 
-        public static OauthClient Create(IotDbContext dbContext, long ownerId, DTOs.OauthClient dto, string hashClientSecrets, string salt)
+        public static OauthClientRedirectUri Create(IotDbContext dbContext, long ownerId, DTOs.OauthClientRedirectUri dto)
         {
-            OauthClient record = new OauthClient();
+            OauthClientRedirectUri record = new OauthClientRedirectUri();
             foreach (var propOfDTO in dto.GetType().GetProperties())
             {
                 var value = propOfDTO.GetValue(dto);
                 var prop = record.GetType().GetProperty(propOfDTO.Name);
                 prop.SetValue(record, value);
             }
-            record.HashClientSecrets = hashClientSecrets;
             record.OwnerId = ownerId;
-            record.Salt = salt;
             record.CreatedAt = DateTime.Now;
-            dbContext.OauthClient.Add(record);
+            dbContext.OauthClientRedirectUri.Add(record);
             dbContext.SaveChanges();
             return record;
         }
@@ -76,28 +70,29 @@ namespace Homo.IotApi
         {
             foreach (long id in ids)
             {
-                OauthClient record = new OauthClient { Id = id, OwnerId = ownerId };
-                dbContext.Attach<OauthClient>(record);
+                OauthClientRedirectUri record = new OauthClientRedirectUri { OwnerId = ownerId, Id = id };
+                dbContext.Attach<OauthClientRedirectUri>(record);
                 record.DeletedAt = DateTime.Now;
             }
             dbContext.SaveChanges();
         }
 
-        public static void Update(IotDbContext dbContext, long ownerId, long id, DTOs.OauthClient dto)
+        public static void Update(IotDbContext dbContext, long ownerId, long id, DTOs.OauthClientRedirectUri dto)
         {
-            OauthClient record = dbContext.OauthClient.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
+            OauthClientRedirectUri record = dbContext.OauthClientRedirectUri.Where(x => x.OwnerId == ownerId && x.Id == id).FirstOrDefault();
             foreach (var propOfDTO in dto.GetType().GetProperties())
             {
                 var value = propOfDTO.GetValue(dto);
                 var prop = record.GetType().GetProperty(propOfDTO.Name);
                 prop.SetValue(record, value);
             }
+            record.EditedAt = DateTime.Now;
             dbContext.SaveChanges();
         }
 
         public static void Delete(IotDbContext dbContext, long ownerId, long id)
         {
-            OauthClient record = dbContext.OauthClient.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
+            OauthClientRedirectUri record = dbContext.OauthClientRedirectUri.Where(x => x.OwnerId == ownerId && x.Id == id).FirstOrDefault();
             record.DeletedAt = DateTime.Now;
             dbContext.SaveChanges();
         }

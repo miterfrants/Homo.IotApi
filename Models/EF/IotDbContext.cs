@@ -20,6 +20,8 @@ namespace Homo.IotApi
         public virtual DbSet<OauthCode> OauthCode { get; set; }
 
         public virtual DbSet<OauthClient> OauthClient { get; set; }
+        
+        public virtual DbSet<OauthClientRedirectUri> OauthClientRedirectUri { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

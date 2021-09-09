@@ -1,13 +1,12 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Homo.AuthApi;
-using Homo.Core.Constants;
+using Homo.Api;
 
 namespace Homo.IotApi
 {
     [IotAuthorizeFactory]
     [Route("v1/google-smart-home")]
+    [Validate]
     public class GoogleSmartHomeController : ControllerBase
     {
         private readonly IotDbContext _dbContext;

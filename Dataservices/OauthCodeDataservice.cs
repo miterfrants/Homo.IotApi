@@ -9,6 +9,11 @@ namespace Homo.IotApi
             return dbContext.OauthCode.FirstOrDefault(x => x.DeletedAt == null && x.Id == id);
         }
 
+        public static OauthCode GetOneByCode(IotDbContext dbContext, string code)
+        {
+            return dbContext.OauthCode.FirstOrDefault(x => x.DeletedAt == null && x.Code == code);
+        }
+
         public static OauthCode Create(IotDbContext dbContext, DTOs.OauthCode dto)
         {
             OauthCode record = new OauthCode();

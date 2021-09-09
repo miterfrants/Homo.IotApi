@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Homo.AuthApi;
+using Homo.Api;
 using Homo.Core.Constants;
 using Homo.Core.Helpers;
 
@@ -8,6 +8,7 @@ namespace Homo.IotApi
 {
     [IotAuthorizeFactory]
     [Route("v1/me/oauth-clients")]
+    [Validate]
     public class OauthClientController : ControllerBase
     {
         private readonly IotDbContext _dbContext;
@@ -58,7 +59,7 @@ namespace Homo.IotApi
             OauthClient record = OauthClientDataservice.GetOne(_dbContext, ownerId, id);
             if (record == null)
             {
-                throw new CustomException(ERROR_CODE.DATA_NOT_FOUND, System.Net.HttpStatusCode.NotFound);
+                throw new CustomException(Homo.AuthApi.ERROR_CODE.DATA_NOT_FOUND, System.Net.HttpStatusCode.NotFound);
             }
             return record;
         }

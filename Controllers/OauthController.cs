@@ -6,6 +6,7 @@ using Homo.Core.Helpers;
 using Homo.Core.Constants;
 using Homo.AuthApi;
 using Microsoft.Extensions.Options;
+using System.Security.Claims;
 
 namespace Homo.IotApi
 {
@@ -26,11 +27,26 @@ namespace Homo.IotApi
         }
 
         [HttpGet]
-        public ActionResult<dynamic> getCode([FromQuery(Name = "redirect_url")] string redirectUrl, [FromQuery] string state)
+        public ActionResult<dynamic> getCode([FromQuery(Name = "redirect_uri")] string redirectUri, [FromQuery] string state, [FromQuery(Name = "response_type")] string responseType, [FromQuery(Name = "client_id")] string clientId)
         {
+            if (responseType != "code")
+            {
+                throw new CustomException(ERROR_CODE.OAUTH_TYPE_ONLY_SUPPORT_CODE, System.Net.HttpStatusCode.BadRequest);
+            }
+            var oauthClient = OauthClientDataservice.GetOneByClientId(_iotDbContext, clientId);
+            if (oauthClient == null)
+            {
+                throw new CustomException(ERROR_CODE.OAUTH_CLIENT_ID_NOT_FOUND, System.Net.HttpStatusCode.BadRequest);
+            }
+            var oauthClientRedirectUri = OauthClientRedirectUriDataservice.GetOneByRedirectUri(_iotDbContext, oauthClient.OwnerId, redirectUri);
+            if (oauthClientRedirectUri == null)
+            {
+                throw new CustomException(ERROR_CODE.OAUTH_REDIRECT_URI_NOT_IN_WHITLIST, System.Net.HttpStatusCode.BadRequest);
+            }
+
             string randomCode = CryptographicHelper.GetSpecificLengthRandomString(20, true, false);
-            OauthCodeDataservice.Create(_iotDbContext, new DTOs.OauthCode() { Code = randomCode, ExpiredAt = System.DateTime.Now.AddSeconds(60) });
-            Response.Redirect($"{redirectUrl}?code={randomCode}&state={state}");
+            OauthCodeDataservice.Create(_iotDbContext, new DTOs.OauthCode() { Code = randomCode, ExpiredAt = System.DateTime.Now.AddSeconds(60), ClientId = clientId });
+            Response.Redirect($"{redirectUri}?code={randomCode}&state={state}");
             return new { code = randomCode };
         }
 
@@ -38,38 +54,57 @@ namespace Homo.IotApi
         [Route("token")]
         public ActionResult<dynamic> auth([FromBody] DTOs.Oauth dto)
         {
-            // make sure user authorized
-            var oauthClient = OauthClientDataservice.GetOneByClientId(_iotDbContext, dto.client_id);
-            if (oauthClient.HashClientSecrets != CryptographicHelper.GenerateSaltedHash(dto.client_secret, oauthClient.Salt))
-            {
-                throw new CustomException(ERROR_CODE.UNAUTH_ACCESS_API, System.Net.HttpStatusCode.Forbidden);
-            }
-
+            OauthClient oauthClient = null;
             int expirationMinutes = 3 * 30 * 24 * 60;
-            var expirationTime = DateTime.Now.ToUniversalTime().AddMinutes(expirationMinutes);
-            Int32 unixTimestamp = (Int32)(expirationTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
-            User user = UserDataservice.GetOne(_dbContext, oauthClient.OwnerId);
-            List<ViewRelationOfGroupAndUser> permissions = RelationOfGroupAndUserDataservice.GetRelationByUserId(_dbContext, user.Id);
-            string[] roles = permissions.SelectMany(x => Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(x.Roles)).ToArray();
-            var extraPayload = new Homo.AuthApi.DTOs.JwtExtraPayload()
-            {
-                Id = user.Id,
-                Email = user.Email,
-                FirstName = user.FirstName,
-                LastName = user.LastName,
-                County = user.County,
-                City = user.City,
-                FacebookSub = user.FacebookSub,
-                GoogleSub = user.GoogleSub,
-                LineSub = user.LineSub,
-                Profile = user.Profile,
-                PseudonymousPhone = user.PseudonymousPhone,
-                PseudonymousAddress = user.PseudonymousAddress
-            };
-            string accessToken = JWTHelper.GenerateToken(_jwtKey, expirationMinutes, extraPayload, roles);
-
             if (dto.grant_type == "authorization_code")
             {
+                if (dto == null)
+                {
+                    throw new CustomException(Homo.Api.ERROR_CODE.INVALID_FORM, System.Net.HttpStatusCode.BadRequest);
+                }
+                oauthClient = OauthClientDataservice.GetOneByClientId(_iotDbContext, dto.client_id);
+                if (oauthClient == null)
+                {
+                    throw new CustomException(ERROR_CODE.OAUTH_CLIENT_ID_NOT_FOUND, System.Net.HttpStatusCode.BadRequest);
+                }
+                var oauthClientRedirectUri = OauthClientRedirectUriDataservice.GetOneByRedirectUri(_iotDbContext, oauthClient.OwnerId, dto.redirect_uri);
+                if (oauthClientRedirectUri == null)
+                {
+                    throw new CustomException(ERROR_CODE.OAUTH_REDIRECT_URI_NOT_IN_WHITLIST, System.Net.HttpStatusCode.BadRequest);
+                }
+                var oauthClientCode = OauthCodeDataservice.GetOneByCode(_iotDbContext, dto.code);
+                if (oauthClientCode.ExpiredAt <= DateTime.Now)
+                {
+                    throw new CustomException(ERROR_CODE.OAUTH_CODE_EXPIRED, System.Net.HttpStatusCode.BadRequest);
+                }
+
+                // make sure user authorized
+                if (oauthClient.HashClientSecrets != CryptographicHelper.GenerateSaltedHash(dto.client_secret, oauthClient.Salt))
+                {
+                    throw new CustomException(Homo.AuthApi.ERROR_CODE.UNAUTH_ACCESS_API, System.Net.HttpStatusCode.Forbidden);
+                }
+
+                var expirationTime = DateTime.Now.ToUniversalTime().AddMinutes(expirationMinutes);
+                Int32 unixTimestamp = (Int32)(expirationTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
+                User user = UserDataservice.GetOne(_dbContext, oauthClient.OwnerId);
+                List<ViewRelationOfGroupAndUser> permissions = RelationOfGroupAndUserDataservice.GetRelationByUserId(_dbContext, user.Id);
+                string[] roles = permissions.SelectMany(x => Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(x.Roles)).ToArray();
+                var extraPayload = new Homo.AuthApi.DTOs.JwtExtraPayload()
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    County = user.County,
+                    City = user.City,
+                    FacebookSub = user.FacebookSub,
+                    GoogleSub = user.GoogleSub,
+                    LineSub = user.LineSub,
+                    Profile = user.Profile,
+                    PseudonymousPhone = user.PseudonymousPhone,
+                    PseudonymousAddress = user.PseudonymousAddress
+                };
+                string accessToken = JWTHelper.GenerateToken(_jwtKey, expirationMinutes, extraPayload, roles);
                 string refreshToken = JWTHelper.GenerateToken(_refreshJwtKey, 6 * 30 * 24 * 60, extraPayload, roles);
                 return new
                 {
@@ -84,10 +119,14 @@ namespace Homo.IotApi
                 string authorization = Request.Headers["Authorization"];
                 string token = authorization == null ? "" : authorization.Substring("Bearer ".Length).Trim();
                 Homo.AuthApi.DTOs.JwtExtraPayload refreshExtraPayload = JWTHelper.GetExtraPayload(_refreshJwtKey, token);
+                ClaimsPrincipal payload = JWTHelper.GetPayload(_refreshJwtKey, token);
                 if (refreshExtraPayload == null)
                 {
-                    throw new CustomException(ERROR_CODE.UNAUTH_ACCESS_API, System.Net.HttpStatusCode.Forbidden);
+                    throw new CustomException(Homo.AuthApi.ERROR_CODE.UNAUTH_ACCESS_API, System.Net.HttpStatusCode.Forbidden);
                 }
+                string accessToken = JWTHelper.GenerateToken(_jwtKey, expirationMinutes, refreshExtraPayload, new string[] { "testing" });
+                var expirationTime = DateTime.Now.ToUniversalTime().AddMinutes(expirationMinutes);
+                Int32 unixTimestamp = (Int32)(expirationTime.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;
                 return new
                 {
                     token_type = "bearer",

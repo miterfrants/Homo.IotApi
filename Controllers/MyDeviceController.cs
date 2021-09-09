@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Homo.AuthApi;
+using Homo.Api;
 using Homo.Core.Constants;
 
 namespace Homo.IotApi
 {
     [IotAuthorizeFactory]
     [Route("v1/me/devices")]
+    [Validate]
     public class MyDeviceController : ControllerBase
     {
         private readonly IotDbContext _dbContext;
@@ -60,7 +60,7 @@ namespace Homo.IotApi
             Device record = DeviceDataservice.GetOne(_dbContext, ownerId, id);
             if (record == null)
             {
-                throw new CustomException(ERROR_CODE.DATA_NOT_FOUND, System.Net.HttpStatusCode.NotFound);
+                throw new CustomException(Homo.AuthApi.ERROR_CODE.DATA_NOT_FOUND, System.Net.HttpStatusCode.NotFound);
             }
             return record;
         }
