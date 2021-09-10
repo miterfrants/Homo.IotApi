@@ -14,4 +14,5 @@ FROM mcr.microsoft.com/dotnet/aspnet:5.0.5
 
 WORKDIR /app
 COPY --from=build-env /app/out .
+
 ENTRYPOINT ["dotnet", "IotApi.dll"]
