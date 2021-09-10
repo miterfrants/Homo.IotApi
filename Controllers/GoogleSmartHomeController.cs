@@ -68,12 +68,17 @@ namespace Homo.IotApi
                 RequestId = dto.RequestId,
                 Payload = new
                 {
-                    Devices = devices.Select(x => new Dictionary<long, dynamic>
+                    Devices = devices.Select((x) =>
                     {
+                        var deviceState = myDeviceStates.Where(y => y.DeviceId == x.Id).FirstOrDefault();
+                        return new
                         {
-                            x.Id, myDeviceStates.Where(y=>  y.DeviceId== x.Id).FirstOrDefault()
-                        }
-                    }).ToList()
+                            DeviceId = deviceState.DeviceId.ToString(),
+                            On = deviceState.On,
+                            Status = deviceState.Status,
+                            Online = deviceState.Online,
+                        };
+                    }).ToDictionary(x => x.DeviceId)
                 }
             };
         }
@@ -100,9 +105,14 @@ namespace Homo.IotApi
                     Commands = new List<dynamic>()
                     {
                         new {
-                            Devices = commands[0].Devices,
+                            Ids = myDeviceIds.Select(x=> x.ToString()).ToList<string>(),
                             Status = "SUCCESS",
-                            States = states
+                            States = states.Select(x=>new {
+                                DeviceId = x.DeviceId.ToString(),
+                                On = x.On,
+                                Status = x.Status,
+                                Online = x.Online,
+                            }).ToList()
                         }
                     }
 
@@ -131,7 +141,7 @@ namespace Homo.IotApi
 
     public class DeviceInfo
     {
-        public long Id { get; set; }
+        public string Id { get; set; }
         public DeviceName Name { get; set; }
         public List<string> Traits { get; set; }
         public string Type { get; set; }
