@@ -47,12 +47,12 @@ namespace Homo.IotApi
             string randomCode = CryptographicHelper.GetSpecificLengthRandomString(20, true, false);
             OauthCodeDataservice.Create(_iotDbContext, new DTOs.OauthCode() { Code = randomCode, ExpiredAt = System.DateTime.Now.AddSeconds(60), ClientId = clientId });
             Response.Redirect($"{redirectUri}?code={randomCode}&state={state}");
+            Response.StatusCode = (int)System.Net.HttpStatusCode.Redirect;
             return new { code = randomCode };
         }
 
-        [HttpPost]
         [Route("token")]
-        public ActionResult<dynamic> auth([FromBody] DTOs.Oauth dto)
+        public ActionResult<dynamic> auth([FromForm] DTOs.Oauth dto)
         {
             OauthClient oauthClient = null;
             int expirationMinutes = 3 * 30 * 24 * 60;
