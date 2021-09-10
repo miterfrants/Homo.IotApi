@@ -9,6 +9,6 @@ sudo docker run -d \
     -e ASPNETCORE_URLS=http://\*:8080 -e ASPNETCORE_ENVIRONMENT=prod \
     -p 8099:8080 \
     --name homo-iot-api \
-    -v /var/project/homo-iot-api/appsettings.json:/app/appsettings.json \
-    -v /var/project/homo-iot-api/secrets.json:/app/secrets.json \
+    -v /var/project/Homo.IotApi/appsettings.json:/app/appsettings.json \
+    -v /var/project/Homo.IotApi/secrets.json:/app/secrets.json \
     homo-iot-api
