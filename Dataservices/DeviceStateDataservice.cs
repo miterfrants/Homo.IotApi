@@ -9,6 +9,14 @@ namespace Homo.IotApi
     {
 
         private static List<DeviceState> _deviceStates = new List<DeviceState>();
+        public static DeviceState GetOne(long id)
+        {
+            return _deviceStates
+                .Where(x =>
+                    x.DeviceId == id
+                )
+                .FirstOrDefault();
+        }
         public static List<DeviceState> GetAll(long? ownerId, List<long> deviceIds)
         {
             return _deviceStates
