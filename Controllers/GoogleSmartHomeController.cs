@@ -37,6 +37,7 @@ namespace Homo.IotApi
 
         private ActionResult<dynamic> onSync([FromBody] DTOs.GoogleSmartHome dto, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
         {
+            System.Console.WriteLine($"testing onSync:{Newtonsoft.Json.JsonConvert.SerializeObject(dto, Newtonsoft.Json.Formatting.Indented)}");
             long ownerId = extraPayload.Id;
             List<Device> devices = DeviceDataservice.GetAll(_dbContext, ownerId);
             return new
