@@ -1,4 +1,5 @@
-# REDIS
+git pull origin master
+
 if [ "$(sudo docker ps -q -f name=homo-iot-api)" ]; then
     sudo docker stop homo-iot-api
 fi
