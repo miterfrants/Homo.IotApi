@@ -52,7 +52,8 @@ namespace Homo.IotApi
         }
 
         [Route("token")]
-        public ActionResult<dynamic> auth([FromForm] DTOs.Oauth dto)
+        [HttpPost]
+        public ActionResult<dynamic> auth([FromBody] DTOs.Oauth dto)
         {
             OauthClient oauthClient = null;
             int expirationMinutes = 3 * 30 * 24 * 60;
@@ -135,7 +136,7 @@ namespace Homo.IotApi
                 };
             }
 
-            return null;
+            return new { };
         }
     }
 }

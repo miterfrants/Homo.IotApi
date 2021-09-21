@@ -54,10 +54,23 @@ namespace Homo.IotApi
 
         [HttpGet]
         [Route("{id}")]
-        public ActionResult<dynamic> get([FromRoute] int id, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
+        public ActionResult<dynamic> getOne([FromRoute] int id, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
         {
             long ownerId = extraPayload.Id;
             Device record = DeviceDataservice.GetOne(_dbContext, ownerId, id);
+            if (record == null)
+            {
+                throw new CustomException(Homo.AuthApi.ERROR_CODE.DATA_NOT_FOUND, System.Net.HttpStatusCode.NotFound);
+            }
+            return record;
+        }
+
+        [HttpGet]
+        [Route("by-device-id/{deviceId}")]
+        public ActionResult<dynamic> getOneByDeviceId([FromRoute] string deviceId, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
+        {
+            long ownerId = extraPayload.Id;
+            Device record = DeviceDataservice.GetOneByDeviceId(_dbContext, ownerId, deviceId);
             if (record == null)
             {
                 throw new CustomException(Homo.AuthApi.ERROR_CODE.DATA_NOT_FOUND, System.Net.HttpStatusCode.NotFound);
