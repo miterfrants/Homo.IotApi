@@ -16,6 +16,7 @@ namespace Homo.IotApi
         public long ZoneId { get; set; }
         public Zone Zone { get; set; }
         public string Info { get; set; }
+        [MaxLength(128)]
         public string DeviceId { get; set; }
     }
 }

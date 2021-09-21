@@ -20,7 +20,7 @@ namespace Homo.IotApi
         public virtual DbSet<OauthCode> OauthCode { get; set; }
 
         public virtual DbSet<OauthClient> OauthClient { get; set; }
-        
+
         public virtual DbSet<OauthClientRedirectUri> OauthClientRedirectUri { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -38,6 +38,7 @@ namespace Homo.IotApi
             modelBuilder.Entity<Device>(entity =>
             {
                 entity.HasIndex(p => new { p.Name });
+                entity.HasIndex(p => new { p.DeviceId });
                 entity.HasOne(p => p.Zone).WithMany().HasForeignKey(p => p.ZoneId);
             });
 
