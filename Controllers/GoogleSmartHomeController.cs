@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Homo.Api;
+using Newtonsoft.Json;
 
 namespace Homo.IotApi
 {
@@ -39,13 +40,22 @@ namespace Homo.IotApi
         {
             long ownerId = extraPayload.Id;
             List<Device> devices = DeviceDataservice.GetAll(_dbContext, ownerId);
+            List<DeviceInfo> deviceInfos = devices
+                .Select(x =>
+                {
+                    var temp = JsonConvert.DeserializeObject<DeviceInfo>(x.Info);
+                    temp.Name = new DeviceName() { Name = x.Name };
+                    temp.Id = x.Id.ToString();
+                    return temp;
+                })
+                .ToList<DeviceInfo>();
             return new
             {
                 RequestId = dto.RequestId,
                 Payload = new
                 {
                     AgentUserId = ownerId,
-                    Devices = devices.Select(x => Newtonsoft.Json.JsonConvert.DeserializeObject<DeviceInfo>(x.Info)).ToList<DeviceInfo>()
+                    Devices = deviceInfos
                 }
             };
         }
