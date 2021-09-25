@@ -22,5 +22,10 @@ namespace Homo.IotApi
             return DeviceStateDataservice.GetOne(id);
         }
 
+        [HttpPost]
+        public ActionResult<dynamic> initializeState([FromRoute] long id, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
+        {
+            return DeviceStateDataservice.Create(extraPayload.Id, id);
+        }
     }
 }

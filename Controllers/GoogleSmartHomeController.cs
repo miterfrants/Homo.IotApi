@@ -20,7 +20,6 @@ namespace Homo.IotApi
         [HttpPost]
         public ActionResult<dynamic> fulfillment([FromBody] DTOs.GoogleSmartHome dto, Homo.AuthApi.DTOs.JwtExtraPayload extraPayload)
         {
-            System.Console.WriteLine($"testing command:{Newtonsoft.Json.JsonConvert.SerializeObject(dto, Newtonsoft.Json.Formatting.Indented)}");
             if (dto.Inputs[0].Intent == GOOGLE_SMART_HOME_INTENT.DEVICES_SYNC)
             {
                 return onSync(dto, extraPayload);
