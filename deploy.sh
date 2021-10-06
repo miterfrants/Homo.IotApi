@@ -1,6 +1,6 @@
 git pull origin master
 
-docker build -t homo-iot-api ./
+sudo docker build -t homo-iot-api ./
 
 if [ "$(sudo docker ps -q -f name=homo-iot-api)" ]; then
     sudo docker stop homo-iot-api
