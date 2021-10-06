@@ -7,79 +7,84 @@ namespace Homo.IotApi
 {
     public class DeviceStateDataservice
     {
-
-        private static List<DeviceState> _deviceStates = new List<DeviceState>();
-        public static DeviceState GetOne(long id)
+        public static DeviceState GetOne(IotDbContext dbContext, long? deviceId, byte? mode, string pin)
         {
-            return _deviceStates
+            return dbContext.DeviceState
                 .Where(x =>
-                    x.DeviceId == id
+                    x.DeletedAt == null &&
+                    (deviceId == null || x.DeviceId == deviceId) &&
+                    (mode == null || x.Mode == mode) &&
+                    (pin == null || x.Pin == pin)
                 )
                 .FirstOrDefault();
         }
-        public static List<DeviceState> GetAll(long? ownerId, List<long> deviceIds)
+        public static List<DeviceState> GetAll(IotDbContext dbContext, long? ownerId, List<long> deviceIds, byte? mode, string pin)
         {
-            return _deviceStates
+            return dbContext.DeviceState
                 .Where(x =>
+                    x.DeletedAt == null &&
                     (ownerId == null || x.OwnerId == ownerId) &&
-                    (deviceIds == null || deviceIds.Contains(x.DeviceId))
+                    (deviceIds == null || deviceIds.Contains(x.DeviceId)) &&
+                    (mode == null || x.Mode == (byte)mode) &&
+                    (pin == null || x.Pin == pin)
                 )
                 .ToList<DeviceState>();
         }
 
-        public static DeviceState Create(long ownerId, long deviceId)
+        public static DeviceState Create(IotDbContext dbContext, long ownerId, long deviceId, DTOs.DeviceState dto)
         {
-            var deviceState = new DeviceState()
+            DeviceState record = new DeviceState();
+            foreach (var propOfDTO in dto.GetType().GetProperties())
             {
-                DeviceId = deviceId,
-                OwnerId = ownerId,
-                Status = "SUCCESS",
-                Online = true,
-                On = false
-            };
-            _deviceStates.Add(deviceState);
-            return deviceState;
+                var value = propOfDTO.GetValue(dto);
+                var prop = record.GetType().GetProperty(propOfDTO.Name);
+                prop.SetValue(record, value);
+            }
+            record.CreatedAt = DateTime.Now;
+            record.OwnerId = ownerId;
+            record.DeviceId = deviceId;
+            dbContext.DeviceState.Add(record);
+            dbContext.SaveChanges();
+            return record;
         }
 
-        public static void Update(long ownerId, long deviceId, dynamic deviceParams)
+        public static void BatchDelete(IotDbContext dbContext, long ownerId, List<long> ids)
         {
-            var targetDeviceState = _deviceStates.Find(x => x.DeviceId == deviceId && x.OwnerId == ownerId);
-            if (targetDeviceState == null)
+            foreach (long id in ids)
             {
-                targetDeviceState = DeviceStateDataservice.Create(ownerId, deviceId);
+                DeviceState record = new DeviceState { Id = id, OwnerId = ownerId };
+                dbContext.Attach<DeviceState>(record);
+                record.DeletedAt = DateTime.Now;
             }
-            var executeParams = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, dynamic>>(deviceParams.ToString());
-            foreach (string key in executeParams.Keys)
-            {
-                var property = targetDeviceState.GetType().GetProperty(key.Substring(0, 1).ToUpper() + key.Substring(1));
-                if (property == null)
-                {
-                    continue;
-                }
-                property.SetValue(targetDeviceState, executeParams[key]);
-            }
+            dbContext.SaveChanges();
         }
 
-    }
+        public static void Update(IotDbContext dbContext, long ownerId, long id, DTOs.DeviceState dto)
+        {
+            DeviceState record = dbContext.DeviceState.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
+            foreach (var propOfDTO in dto.GetType().GetProperties())
+            {
+                var value = propOfDTO.GetValue(dto);
+                var prop = record.GetType().GetProperty(propOfDTO.Name);
+                prop.SetValue(record, value);
+            }
+            record.EditedAt = DateTime.Now;
+            dbContext.SaveChanges();
+        }
+        public static void UpdateValueByDeviceId(IotDbContext dbContext, long ownerId, long deviceId, string pin, decimal value)
+        {
+            DeviceState record = dbContext.DeviceState.Where(x => x.DeviceId == deviceId && x.OwnerId == ownerId && x.Pin == pin && x.Mode == (byte)DEVICE_MODE.OUTPUT).FirstOrDefault();
+            record.Value = value;
+            record.EditedAt = DateTime.Now;
+            dbContext.SaveChanges();
+        }
 
-    public class DeviceState
-    {
-        public long OwnerId { get; set; }
-        public long DeviceId { get; set; }
-        public string Status { get; set; }
-        public bool Online { get; set; }
-        public bool On { get; set; }
-    }
+        public static void Delete(IotDbContext dbContext, long ownerId, long id)
+        {
+            DeviceState record = dbContext.DeviceState.Where(x => x.Id == id && x.OwnerId == ownerId).FirstOrDefault();
+            record.DeletedAt = DateTime.Now;
+            dbContext.SaveChanges();
+        }
 
-
-    public class LampDeviceState : DeviceState
-    {
-        public int Brightness { get; set; }
-        public LampColor Color { get; set; }
-    }
-
-    public class LampColor
-    {
-        public int TemperatureK { get; set; }
     }
 }

@@ -11,6 +11,7 @@ namespace Homo.IotApi
     [Validate]
     public class GoogleSmartHomeController : ControllerBase
     {
+        private readonly string GoogleDevicePin = "D0";
         private static List<DeviceState> DeviceStates = new List<DeviceState>();
         private readonly IotDbContext _dbContext;
         public GoogleSmartHomeController(IotDbContext dbContext)
@@ -65,12 +66,18 @@ namespace Homo.IotApi
             long ownerId = extraPayload.Id;
             List<Device> devices = DeviceDataservice.GetAll(_dbContext, ownerId);
             List<long> myDeviceIds = devices.Select(x => x.Id).ToList<long>();
-            List<DeviceState> myDeviceStates = DeviceStateDataservice.GetAll(ownerId, myDeviceIds);
-            List<long> myDevicesIdsFromMemoryDeviceStates = myDeviceStates.Select(x => x.DeviceId).ToList<long>();
+            List<DeviceState> myDeviceStates = DeviceStateDataservice.GetAll(_dbContext, ownerId, myDeviceIds, (byte)DEVICE_MODE.OUTPUT, this.GoogleDevicePin);
+            List<long> existsStateDeviceIds = myDeviceStates.Select(x => x.DeviceId).ToList();
             // create device state to memory
-            devices.Where(x => !myDevicesIdsFromMemoryDeviceStates.Contains(x.Id)).ToList().ForEach(device =>
+            devices.Where(x => !existsStateDeviceIds.Contains(x.Id)).ToList().ForEach(device =>
             {
-                DeviceStateDataservice.Create(ownerId, device.Id);
+                // Google Smart Home Device Default Pin: D0
+                DeviceStateDataservice.Create(_dbContext, ownerId, device.Id, new DTOs.DeviceState()
+                {
+                    Pin = GoogleDevicePin,
+                    Mode = (byte)DEVICE_MODE.OUTPUT,
+                    Value = 0
+                });
             });
             return new
             {
@@ -83,8 +90,8 @@ namespace Homo.IotApi
                         return new
                         {
                             DeviceId = deviceState.DeviceId.ToString(),
-                            On = deviceState.On,
-                            Status = deviceState.Status,
+                            On = deviceState.Value == 1,
+                            Status = "SUCCESS",
                             Online = deviceState.Online,
                         };
                     }).ToDictionary(x => x.DeviceId)
@@ -101,11 +108,19 @@ namespace Homo.IotApi
             {
                 for (int i = 0; i < command.Devices.Count; i++)
                 {
-                    DeviceStateDataservice.Update(ownerId, command.Devices[i].Id, command.Execution[i].Params);
+                    DeviceStateDataservice.UpdateValueByDeviceId(_dbContext, ownerId, command.Devices[i].Id, GoogleDevicePin, command.Execution[i].Params.on.Value ? 1 : 0);
                 }
             });
             List<long> myDeviceIds = commands[0].Devices.Select(x => x.Id).ToList<long>();
-            List<DeviceState> states = DeviceStateDataservice.GetAll(ownerId, myDeviceIds);
+            List<GoogleDeviceState> states = DeviceStateDataservice.GetAll(_dbContext, ownerId, myDeviceIds, (byte)DEVICE_MODE.OUTPUT, this.GoogleDevicePin)
+            .Select(x => new GoogleDeviceState()
+            {
+                DeviceId = x.DeviceId,
+                On = x.Value == 1,
+                Status = "SUCCESS",
+                Online = x.Online,
+            }).ToList();
+
             return new
             {
                 RequestId = dto.RequestId,
@@ -164,4 +179,12 @@ namespace Homo.IotApi
         public string Name { get; set; }
     }
 
+    public class GoogleDeviceState
+    {
+        public long OwnerId { get; set; }
+        public long DeviceId { get; set; }
+        public string Status { get; set; }
+        public bool Online { get; set; }
+        public bool On { get; set; }
+    }
 }
